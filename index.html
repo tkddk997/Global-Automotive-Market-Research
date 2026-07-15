@@ -629,149 +629,74 @@
     }
 
     // Call Gemini API with Google Search Grounding to do dynamic automated market research
-    async function refreshCountryData(userClick = false) {
-        const country = COUNTRIES_METADATA[activeCountry];
-        const loader = document.getElementById("loading-overlay");
-        const progressBar = document.getElementById("loading-progress-bar");
-        const statusTitle = document.getElementById("loading-status-title");
-        const statusDesc = document.getElementById("loading-status-desc");
+// Call Gemini API with Google Search Grounding to do dynamic automated market research
+async function refreshCountryData(userClick = false) {
+    const country = COUNTRIES_METADATA[activeCountry];
+    const loader = document.getElementById("loading-overlay");
+    const progressBar = document.getElementById("loading-progress-bar");
+    const statusTitle = document.getElementById("loading-status-title");
+    const statusDesc = document.getElementById("loading-status-desc");
 
-        loader.classList.remove("hidden");
-        progressBar.style.width = "10%";
-        statusTitle.innerText = `${country.name} 실시간 검색 분석기 가동...`;
-        statusDesc.innerText = "Reuters, Autocar, 전문 보도자료망의 구글 검색 기반 분석 인프라를 가동 중입니다.";
+    loader.classList.remove("hidden");
+    progressBar.style.width = "20%";
+    statusTitle.innerText = `${country.name} 실시간 검색 분석기 가동...`;
+    statusDesc.innerText = "데이터 요청 및 AI 분석 수행 중...";
 
-        // Progression Simulation for immersive visual impact
-        let progress = 10;
-        const progInterval = setInterval(() => {
-            if (progress < 85) {
-                progress += Math.floor(Math.random() * 8) + 3;
-                progressBar.style.width = `${progress}%`;
-                if (progress > 30 && progress < 60) {
-                    statusTitle.innerText = `${country.name} 정부 공식 친환경/세금 정책 크롤링 중...`;
-                    statusDesc.innerText = `자료 출처 검증처: ${country.searchFocus}`;
-                } else if (progress >= 60) {
-                    statusTitle.innerText = `현대차 및 라이벌군(${country.competitors.slice(0,5).join(',')} 등) 마케팅·캠페인 취합 중...`;
-                    statusDesc.innerText = "디지털 매체 광고, 스포츠 스폰서십, 유튜브 및 현지 미디어 분석 진행 완료 중.";
-                }
+    // 429 에러 방지를 위한 지수 백오프 재시도 로직
+    const fetchWithRetry = async (url, options, retries = 3, backoff = 1000) => {
+        for (let i = 0; i < retries; i++) {
+            const response = await fetch(url, options);
+            if (response.status === 429) {
+                console.warn(`요청 제한(429) 감지. ${backoff}ms 대기 후 재시도...`);
+                await new Promise(resolve => setTimeout(resolve, backoff));
+                backoff *= 2; // 대기 시간 2배 증가
+                continue;
             }
-        }, 800);
+            return response;
+        }
+        return await fetch(url, options);
+    };
 
-        // System Instruction to build structured reliable insights with high coverage and tight temporal filters
-        const systemPrompt = `You are an elite, world-class automotive market intelligence analyst specializing in competitor analysis for Hyundai Motor Group.
-        Your job is to search the web for the absolute latest, highly factual news and real-world market intelligence regarding a specified country.
-        
-        CRITICAL TIME FILTER REQUIREMENT:
-        - The current date is Wednesday, July 15, 2026.
-        - "Latest" or "최신" is strictly defined as news and campaigns published within the LAST 2 MONTHS relative to today (specifically from May 15, 2026 to July 15, 2026).
-        - You MUST heavily prioritize and target the absolute most recent news within the last 2 weeks to 1 month (specifically from mid-June 2026 to July 15, 2026) as the absolute best and ideal target.
-        - Under no circumstances should you include outdated news older than May 15, 2026.
-        
-        Prioritize prestigious sources like Reuters, Autocar, Automotive News, national department of transportation, local authorized automotive media etc.
-        Format your response ONLY as a JSON object matching the specific structure requested, strictly containing real news, correct figures, and relevant clickable source urls found in search metadata.
+    try {
+        if (!customApiKey) {
+            console.log("로컬 데이터 모드 작동");
+            setTimeout(() => renderDashboardContent(DEMO_DATABASE[activeCountry], "데모 데이터"), 1000);
+        } else {
+            const systemPrompt = `You are an elite automotive market intelligence analyst for Hyundai Motor Group. Today is July 15, 2026. Provide highly factual, latest (May 15-July 15, 2026) market news in Korean as a JSON object matching the requested schema.`;
+            const userQuery = `Deep-dive research for ${country.name}. Provide market trends, issues, Hyundai trends, and competitor activities (5 rows each). Respond strictly in JSON format.`;
 
-        Return a single JSON object (with no other markdown text) structured EXACTLY like this schema:
-        {
-          "summary": [
-            "Provide 4 to 5 distinct, incredibly detailed bullet points summarizing the absolute latest key market dynamics (within the last 2 months), emphasizing raw figures or percentages using markdown bold (e.g. **15%**, **$10,000**, **8월 15일**). Format in Korean."
-          ],
-          "marketTrends": [
-            "Provide up to 5 rich entries (minimum 3 if data exists) from the last 2 months. Detailed Korean analysis of social, policy, subsidies, tax changes with stats. Schema: { 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
-          ],
-          "marketIssues": [
-            "Provide up to 5 rich entries (minimum 3 if data exists) from the last 2 months. Detailed Korean analysis of new launches or crucial local issues. Schema: { 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
-          ],
-          "hyundaiTrends": [
-            "Provide up to 5 rich entries (minimum 3 if data exists) from the last 2 months. Detailed Korean analysis of Hyundai's marketing, events, launch news. Schema: { 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
-          ],
-          "competitorTrends": [
-            "IMPORTANT: Actively search and target the ENTIRE provided competitor list for this country. Do not limit to one entry per brand. If a single competitor has multiple active, distinct marketing campaigns, digital/TV/Social ads, launches, or sponsorships (e.g. Toyota having both an EV launch campaign and a major local sports sponsorship) published within the last 2 months, generate SEPARATE, MULTIPLE rows for that competitor brand so that we capture all their key activities comprehensively. Aim for 5 to 10 rich rows in total for this table to showcase maximum coverage. Schema: { 'competitor', 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
-          ]
-        }`;
-
-        const userQuery = `Execute deep-dive research for the country "${country.name}" (${activeCountry}) representing the automotive sector.
-        - Today's date is July 15, 2026. You MUST strictly fetch news, policies, launches, and campaigns published within the last 2 months (between May 15, 2026 and July 15, 2026).
-        - The absolute best and highest priority target window is the last 2 weeks to 1 month (between mid-June 2026 and July 15, 2026). Prioritize these above all else.
-        - Competitors to track comprehensively in this report: ${country.competitors.join(", ")}.
-        - Find key official policy declarations (subsidies, taxes, social issues) from the specified 2-month window. Collect up to 5 major entries.
-        - Find local car market issues, new model trend indexes, or launches from the specified 2-month window. Collect up to 5 major entries.
-        - Find Hyundai's local launches and promotional advertising strategies/sponsorships from the specified 2-month window. Collect up to 5 major entries.
-        - Find competitor-specific marketing campaign launches, digital/TV/Social ads, sports event sponsorships, or promotion rollouts from the specified 2-month window. Actively search multiple distinct brands from the list. If a competitor has multiple prominent campaigns, list them as separate individual entries to show multiple activities per brand. Make sure we populate a wide table with solid, diverse, and deep competitor coverage (aim for 5 to 10 rows in total).
-        - Return the results in Korean language. Maintain factual accuracy and include specific numbers/dates strictly within the 2-month range (May-July 2026). Make sure "sourceUrl" fields are valid, active web URLs retrieved during grounding.`;
-
-        try {
-            const apiKey = customApiKey || ""; // Canvas automatically supplies when left empty.
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                tools: [{ "google_search": {} }],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                generationConfig: {
-                    responseMimeType: "application/json"
+            const response = await fetchWithRetry(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${customApiKey}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        tools: [{ "google_search": {} }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
                 }
-            };
+            );
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP Error Status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`서버 응답 오류: ${response.status}`);
 
             const result = await response.json();
-            clearInterval(progInterval);
-            progressBar.style.width = "100%";
-            statusTitle.innerText = "리서치 정보 취합 및 검증 성공!";
-            statusDesc.innerText = "실시간 구글 검색으로 고신뢰성 정보를 통합 렌더링 중입니다.";
+            const rawText = result.candidates[0].content.parts[0].text;
+            const aiData = JSON.parse(rawText.replace(/```json|```/g, ""));
 
-            const candidate = result.candidates?.[0];
-            if (candidate && candidate.content?.parts?.[0]?.text) {
-                const rawText = candidate.content.parts[0].text;
-                
-                // Super robust JSON extraction: extracts the outer-most { ... } block
-                // This ignores any leading/trailing text, markdown formatting backticks, or citations.
-                let jsonText = rawText.trim();
-                const firstBrace = jsonText.indexOf('{');
-                const lastBrace = jsonText.lastIndexOf('}');
-                
-                if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-                    jsonText = jsonText.substring(firstBrace, lastBrace + 1);
-                } else {
-                    throw new Error("No valid JSON object detected in the response.");
-                }
-
-                const parsedData = JSON.parse(jsonText);
-                
-                // Add timestamp
-                const now = new Date();
-                const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                parsedData.timestamp = formattedDate;
-
-                // Cache to LocalStorage for offline seamless experience
-                localStorage.setItem(`car_research_data_${activeCountry}`, JSON.stringify(parsedData));
-
-                setTimeout(() => {
-                    renderDashboardContent(parsedData, formattedDate);
-                    loader.classList.add("hidden");
-                    showToast(`${country.name} 실시간 리서치가 업데이트되었습니다!`);
-                }, 1000);
-            } else {
-                throw new Error("No text output received from Gemini API.");
-            }
-
-        } catch (error) {
-            console.error("Gemini Search Grounding failed: ", error);
-            clearInterval(progInterval);
-            loader.classList.add("hidden");
-            showToast("실시간 검색 연동에 실패하여 로컬 안전망 데이터로 복원합니다.", "error");
+            const now = new Date();
+            const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            
+            renderDashboardContent(aiData, formattedDate);
         }
+    } catch (err) {
+        console.error("API 연동 실패:", err);
+        alert("데이터 연동에 실패했습니다. API 키를 확인하거나 잠시 후 다시 시도해주세요.");
+    } finally {
+        loader.classList.add("hidden");
     }
+}
 
     // Simple Toast notifications for elegant UX
     function showToast(message, type = "success") {

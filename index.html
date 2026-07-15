@@ -666,7 +666,7 @@ async function refreshCountryData(userClick = false) {
             const userQuery = `Deep-dive research for ${country.name}. Provide market trends, issues, Hyundai trends, and competitor activities (5 rows each). Respond strictly in JSON format.`;
 
             const response = await fetchWithRetry(
-                ``https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${customApiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${customApiKey}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

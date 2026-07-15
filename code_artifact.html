@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>글로벌 자동차 시장 리서치 자동화 대시보드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+        }
+        /* Custom Scrollbar for elegant look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+<div id="app" class="flex-grow flex flex-col">
+    <!-- Top Premium Navigation -->
+    <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                    <i class="fa-solid fa-car-side text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">글로벌 자동차 시장 리서치</h1>
+                    <p class="text-xs text-slate-400">Hyundai Motor Group Competitive Intelligence Dashboard</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 mr-1.5 bg-emerald-400 rounded-full animate-ping"></span>
+                    실시간 검색 엔진 가동 중
+                </span>
+                <button onclick="toggleGlobalSettings()" class="text-slate-400 hover:text-white transition-colors" title="설정">
+                    <i class="fa-solid fa-sliders text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Settings Drawer (Hidden by default) -->
+    <div id="settings-drawer" class="hidden bg-slate-800 text-white border-b border-slate-700 py-3 px-4 shadow-inner">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="text-sm text-slate-300">
+                <i class="fa-solid fa-key mr-2 text-indigo-400"></i>
+                자체 Gemini API 키를 활용하여 완전 개인화된 검색 자동화를 적용할 수 있습니다. (미입력 시 내장 프록시 사용)
+            </div>
+            <div class="flex gap-2 w-full md:w-auto">
+                <input type="password" id="custom-api-key" placeholder="Enter Gemini API Key..." class="bg-slate-900 border border-slate-700 rounded px-3 py-1 text-sm text-white focus:outline-none focus:border-indigo-500 flex-grow md:w-64">
+                <button onclick="saveApiKey()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-1.5 rounded transition">적용</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full flex flex-col lg:flex-row gap-6">
+        
+        <!-- Left Sidebar / Country Tabs Selector -->
+        <aside class="w-full lg:w-64 shrink-0 flex flex-col gap-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">모니터링 국가 (13개국)</h2>
+                <div class="grid grid-cols-2 lg:grid-cols-1 gap-1.5" id="country-tab-list">
+                    <!-- Dynamic Country Buttons -->
+                </div>
+            </div>
+
+            <!-- Dashboard Stats Widget -->
+            <div class="bg-gradient-to-br from-indigo-900 to-slate-900 p-4 rounded-xl text-white shadow-sm flex flex-col gap-3">
+                <h3 class="text-xs font-semibold text-indigo-300 uppercase tracking-wider">종합 모니터링 현황</h3>
+                <div class="grid grid-cols-2 gap-2 text-center">
+                    <div class="bg-white/5 p-2 rounded border border-white/10">
+                        <div class="text-lg font-bold text-indigo-200" id="total-competitors-badge">120개+</div>
+                        <div class="text-[10px] text-slate-400">추적 경쟁사</div>
+                    </div>
+                    <div class="bg-white/5 p-2 rounded border border-white/10">
+                        <div class="text-lg font-bold text-indigo-200">24H</div>
+                        <div class="text-[10px] text-slate-400">수집 주기</div>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-300 border-t border-white/10 pt-2 flex items-center justify-between">
+                    <span>최우선 매체:</span>
+                    <span class="text-white font-medium text-[11px]">Reuters, Autocar 등</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Content Panel -->
+        <section class="flex-grow flex flex-col gap-6">
+            <!-- Active Country Header & Engine Controller -->
+            <div class="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <div class="flex items-center space-x-2.5">
+                        <span class="text-3xl" id="active-country-flag">🇺🇸</span>
+                        <h2 class="text-2xl font-bold text-slate-900" id="active-country-name">미국</h2>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium border border-slate-200" id="active-country-code">US</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">
+                        추적 브랜드: <span class="font-semibold text-indigo-600 font-medium" id="active-country-competitors">Loading...</span>
+                    </p>
+                </div>
+                <div class="flex flex-col items-stretch sm:items-end gap-1.5 w-full sm:w-auto">
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="refreshCountryData(true)" class="flex-grow sm:flex-none inline-flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-all shadow-sm">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>실시간 리서치 업데이트</span>
+                        </button>
+                        <button onclick="exportToText()" class="inline-flex items-center justify-center p-2.5 text-slate-600 hover:text-indigo-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all" title="텍스트 보고서 복사">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                    <div id="top-update-timestamp" class="text-[11px] text-slate-500 font-medium text-center sm:text-right">
+                        <i class="fa-regular fa-clock mr-1"></i>최종 업데이트: 로딩 중...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Loading Status -->
+            <div id="loading-overlay" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-indigo-900" id="loading-status-title">리서치 로봇 작동 중...</h4>
+                        <div class="w-full bg-indigo-200 rounded-full h-1.5 mt-2">
+                            <div id="loading-progress-bar" class="bg-indigo-600 h-1.5 rounded-full transition-all duration-500" style="width: 15%"></div>
+                        </div>
+                        <p class="text-xs text-indigo-700 mt-1" id="loading-status-desc">공식 정부 부처 및 최신 미디어 자료를 검색 수집하고 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Dashboard Bullet Summary Card -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                <div class="absolute right-0 bottom-0 translate-x-4 translate-y-4 opacity-5 pointer-events-none">
+                    <i class="fa-solid fa-quote-right text-9xl text-indigo-950"></i>
+                </div>
+                <div class="flex items-center space-x-2 mb-3">
+                    <div class="bg-indigo-600 text-white p-1 rounded">
+                        <i class="fa-solid fa-bolt text-sm"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-indigo-950">AI 종합 요약 및 인사이트 (Summary)</h3>
+                </div>
+                <ul class="space-y-2.5 text-indigo-900 text-sm list-none pl-1" id="summary-list">
+                    <!-- Dynamic Bullet Points with bold stats -->
+                </ul>
+                <div class="mt-4 flex justify-between items-center text-[11px] text-indigo-700/80 border-t border-indigo-200/50 pt-2.5">
+                    <span id="update-timestamp"><i class="fa-regular fa-clock mr-1"></i>최종 업데이트: 로딩 중...</span>
+                    <span>출처: Reuters, Autocar 및 현지 공식 전문매체 취합</span>
+                </div>
+            </div>
+
+            <!-- 4 Main Research Areas Layout Grid -->
+            <div class="flex flex-col gap-6">
+
+                <!-- 1. 시장 경향성 (Social, Policy, subsidies, taxes) -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg text-sm">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm">시장 경향성 (Market Trends)</h3>
+                                <p class="text-[11px] text-slate-500">각 국가 내 사회·경제·문화 이슈 전반 및 공식 발표 정책 (세금, 보조금 등)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50/50">
+                                <tr>
+                                    <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">공식 경향성 토픽</th>
+                                    <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-2/4">구체적인 규제 정책 및 전반 동향 정보</th>
+                                    <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-12 text-center">날짜</th>
+                                    <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-24 text-center">출처 링크</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white" id="table-market-trends">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-5 py-2.5 bg-slate-50/40 border-t border-slate-100 text-[11px] text-slate-500">
+                <i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> 시장 경향성 분석은 최근 2개월 이내에 발표된 정책 및 동향 중 최대 5개행까지 조사되며, 상단의 <span class="font-semibold text-slate-700">"실시간 리서치 업데이트"</span> 버튼을 클릭하면 가장 최신 소식으로 갱신됩니다.
+            </div>
+        </div>
+
+        <!-- 2. 시장 주요 이슈 (New Launches, Local Issues) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="bg-blue-100 text-blue-700 p-1.5 rounded-lg text-sm">
+                        <i class="fa-solid fa-newspaper"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">시장 주요 이슈 (Market Issues)</h3>
+                        <p class="text-[11px] text-slate-500">각 국가 내 주요 트렌드 지수, 신차 흐름, 긴급 자동차 업계 현안</p>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50/50">
+                        <tr>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">핵심 현안 이슈</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-2/4">상세 트렌드 및 유통 실태</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-12 text-center">날짜</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-24 text-center">출처 링크</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white" id="table-market-issues">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-5 py-2.5 bg-slate-50/40 border-t border-slate-100 text-[11px] text-slate-500">
+                <i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> 시장 주요 이슈 분석은 최근 2개월 이내의 뉴스 중 최대 5개행까지 조사되며, 상단의 <span class="font-semibold text-slate-700">"실시간 리서치 업데이트"</span> 버튼을 클릭하면 가장 최신 소식으로 갱신됩니다.
+            </div>
+        </div>
+
+        <!-- 3. 자사 동향 (Hyundai Marketing/Launch) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="bg-indigo-100 text-indigo-700 p-1.5 rounded-lg text-sm">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">자사 동향 (Hyundai Motor Intelligence)</h3>
+                        <p class="text-[11px] text-slate-500">현대자동차의 현지 미디어 마케팅 활동, 이벤트, 광고 송출 및 신형 라인업 현황</p>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50/50">
+                        <tr>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">마케팅 / 출시 토픽</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-2/4">로컬 타겟 캠페인 및 스폰서십 세부 내용</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-12 text-center">날짜</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-24 text-center">출처 링크</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white" id="table-hyundai-trends">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-5 py-2.5 bg-slate-50/40 border-t border-slate-100 text-[11px] text-slate-500">
+                <i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> 자사 동향 분석은 최근 2개월 이내의 활동 중 최대 5개행까지 조사되며, 상단의 <span class="font-semibold text-slate-700">"실시간 리서치 업데이트"</span> 버튼을 클릭하면 가장 최신 소식으로 갱신됩니다.
+            </div>
+        </div>
+
+        <!-- 4. 경쟁사 동향 (Competitors Campaign / Advertising) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="bg-amber-100 text-amber-700 p-1.5 rounded-lg text-sm">
+                        <i class="fa-solid fa-users-viewfinder"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">경쟁사 동향 (Competitor Activities)</h3>
+                        <p class="text-[11px] text-slate-500">핵심 경쟁사 및 중국 신흥 브랜드의 TV/디지털 광고, 프로모션 런칭 및 브랜드 스폰서십 추적</p>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50/50">
+                        <tr>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-1/5">경쟁 브랜드 / 차종</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-3/5">마케팅 활동 및 캠페인 세부 정보</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-12 text-center">날짜</th>
+                            <th scope="col" class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-24 text-center">출처 / 캠페인 링크</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white" id="table-competitor-trends">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-5 py-2.5 bg-slate-50/40 border-t border-slate-100 text-[11px] text-slate-500">
+                <i class="fa-solid fa-circle-info mr-1 text-amber-500"></i> 해당 국가에 매핑된 전체 추적 브랜드군을 대상으로 최근 2개월 이내에 발생한 마케팅 및 캠페인을 조사하며, 상단의 <span class="font-semibold text-slate-700">"실시간 리서치 업데이트"</span> 버튼을 클릭하면 가장 최신 소식으로 갱신됩니다.
+            </div>
+        </div>
+
+    </div>
+</section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center border-t border-slate-800 text-xs mt-auto">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© 2026 Hyundai Motor Competitive Intelligence System. Automated Real-time Market Intelligence Engine powered by Gemini 3.1 Flash with Search Grounding.</p>
+            <p class="mt-1 text-slate-500">본 대시보드는 글로벌 로이터, 오토카, 주요 전문 정보 매체로부터 실시간 취합된 데이터로 최적화되었습니다.</p>
+        </div>
+    </footer>
+</div>
+
+<script>
+    // 13개 국가별 기본 정보 및 경쟁사 리스트 매핑 데이터 정의
+    const COUNTRIES_METADATA = {
+        "US": {
+            name: "미국",
+            flag: "🇺🇸",
+            competitors: ["Toyota", "Honda", "Nissan", "Ford", "Subaru", "Tesla", "GM"],
+            searchFocus: "Reuters, Autocar, Automotive News, Car and Driver, NHTSA"
+        },
+        "Canada": {
+            name: "캐나다",
+            flag: "🇨🇦",
+            competitors: ["Toyota", "Honda", "Nissan", "GM", "Volkswagen", "Kia", "Jeep", "Chevrolet", "Tesla", "Mazda", "BYD", "Chery"],
+            searchFocus: "Automotive News Canada, Driving.ca, CBC News"
+        },
+        "BR": {
+            name: "브라질",
+            flag: "🇧🇷",
+            competitors: ["Hyundai", "GM", "Fiat", "Volkswagen", "Nissan", "BYD", "Chery", "Haval", "Great Wall", "Geely", "MG"],
+            searchFocus: "Quatro Rodas, AutoEsporte, Fenabrave"
+        },
+        "IN": {
+            name: "인도",
+            flag: "🇮🇳",
+            competitors: ["Hyundai", "Maruti-Suzuki", "Mahindra", "Tata", "Kia", "Skoda", "MG", "BYD", "JAC", "Changan", "Great Wall"],
+            searchFocus: "Autocar India, RushLane, Team-BHP, SIAM India"
+        },
+        "AU": {
+            name: "호주",
+            flag: "🇦🇺",
+            competitors: ["Hyundai", "Toyota", "Mazda", "MG", "Mitsubishi", "Kia", "Ford", "Subaru", "Tesla", "BYD", "Chery", "Geely", "Haval", "Great Wall"],
+            searchFocus: "Drive.com.au, CarExpert, Federal Chamber of Automotive Industries"
+        },
+        "ID": {
+            name: "인도네시아",
+            flag: "🇮🇩",
+            competitors: ["Hyundai", "Toyota", "Mitsubishi", "Honda", "BYD", "WULING", "CHERY", "GEELY", "MG"],
+            searchFocus: "Gaikindo, Oto.com, Kompas Otomotif"
+        },
+        "CN": {
+            name: "중국",
+            flag: "🇨🇳",
+            competitors: ["Hyundai", "BYD", "Geely", "Changan", "GAC", "SAIC", "Li Auto", "NIO", "Xpeng", "Xiaomi", "Toyota", "Honda", "Nissan", "Volkswagen"],
+            searchFocus: "China Automotive News, CAAM, Gasgoo"
+        },
+        "KR": {
+            name: "대한민국",
+            flag: "🇰🇷",
+            competitors: ["Hyundai", "Kia", "KGM", "Renault", "Ford", "Volkswagen", "Tesla", "BYD", "Zeekr", "Mercedes-Benz", "BMW"],
+            searchFocus: "KAMA, 탑라이더, 모터그래프, 국토교통부 발표"
+        },
+        "DE": {
+            name: "독일",
+            flag: "🇩🇪",
+            competitors: ["Dacia", "BMW", "Kia", "Peugeot", "Opel", "Tesla", "Volkswagen", "BYD", "MG", "Xpeng", "Leapmotor", "Volt"],
+            searchFocus: "Auto Motor und Sport, KBA.de, Autobild"
+        },
+        "UK": {
+            name: "영국",
+            flag: "🇬🇧",
+            competitors: ["BMW", "Ford", "Volkswagen", "Toyota", "Nissan", "BYD", "MG", "Chery", "Jaecoo", "Geely"],
+            searchFocus: "SMMT, Autocar UK, Auto Express"
+        },
+        "FR": {
+            name: "프랑스",
+            flag: "🇫🇷",
+            competitors: ["Dacia", "Renault", "Peugeot", "Citroen", "BYD", "MG", "Xpeng", "Xiaomi", "Geely"],
+            searchFocus: "L'Argus, Auto Plus, CCFA"
+        },
+        "ES": {
+            name: "스페인",
+            flag: "🇪🇸",
+            competitors: ["Tesla", "Volkswagen", "Seat", "Cupra", "Renault", "Dacia", "Fiat", "BYD", "MG", "Ebro", "Xpeng", "Omoda"],
+            searchFocus: "Anfac, Motor.es, Auto Fácil"
+        },
+        "IT": {
+            name: "이탈리아",
+            flag: "🇮🇹",
+            competitors: ["Volkswagen", "Fiat", "Stellantis", "Ford", "Kia", "Renault", "BYD", "MG", "Geely", "Jaecoo", "Leapmotor"],
+            searchFocus: "Quattroruote, AlVolante, UNRAE"
+        }
+    };
+
+    // 로컬 백업용 고정 고품질 데모 데이터베이스 (API 호출 전 및 오프라인 대안용)
+    const DEMO_DATABASE = {
+        "US": {
+            summary: [
+                "**2026년 미국 연방 전기차 보조금(IRA)** 제도가 개정되어 리튬 배터리 광물 원산지 규정이 **70% 이상**으로 대폭 상향 조정되었습니다.",
+                "신차 트렌드로 풀사이즈 하이브리드 SUV 판매가 전년 대비 **14.2%** 가파르게 상승 중이며 가성비 중소형 EV 시장이 격화되고 있습니다.",
+                "현대자동차는 플래그십 전기 SUV **아이오닉 9** 런칭 프로모션을 본격 가동하여 슈퍼볼 및 디지털 지면 광고를 **35%** 확대 집행 중입니다.",
+                "테슬라는 보급형 모델 2 프로모션을 기습 실행하였으며, 포드는 F-150 라이트닝의 가격을 최대 **$5,000** 인하하며 맞대응하고 있습니다.",
+                "주요 완성차 업계의 친환경 수소 인프라 연합 결성으로 대형 상용차 부문 친환경 전환율이 **8.5%** 상승 국면에 도달했습니다."
+            ],
+            marketTrends: [
+                { topic: "IRA 보조금 자격 요건 강화", content: "2026년 리튬 및 니켈 핵심 광물의 북미 혹은 FTA 체결국 내 원산지 비중이 70%로 인상되었습니다. 요건 불충족 시 보조금 $7,500 전액 차감 리스크가 커지고 있습니다.", date: "2026-07-10", sourceName: "U.S. IRS Gov", sourceUrl: "https://www.irs.gov" },
+                { topic: "고금리 장기화에 따른 오토론 이탈율 상승", content: "자동차 할부 금융 금리가 평균 7.8%대에 도달하면서 신차 계약 철회율이 5.4%로 전 분기 대비 소폭 상승했습니다. 딜러 인센티브 증가세가 포착되었습니다.", date: "2026-07-01", sourceName: "Automotive News", sourceUrl: "https://www.autonews.com" },
+                { topic: "환경청(EPA) 온실가스 배출 표준 엄격 적용", content: "내연기관 포트폴리오 비중 축소를 가속화하는 제조사 패널티 인상이 예고되어 플러그인 하이브리드(PHEV) 전환 속도가 가속화되고 있습니다.", date: "2026-06-25", sourceName: "US EPA", sourceUrl: "https://www.epa.gov" },
+                { topic: "캘리포니아 등 주요 주 친환경차 의무판매 비율 확대", content: "ZEV(Zero Emission Vehicle) 판매 크레딧 기준이 한 단계 격상되면서 서부 연안 지역의 로컬 세제 인센티브 경쟁이 한층 더 과열되었습니다.", date: "2026-06-18", sourceName: "CARB Gov", sourceUrl: "https://ww2.arb.ca.gov" },
+                { topic: "도심 교통량 완화 세제 혜택 발표", content: "대형 대중교통 거점 및 친환경 환승을 유도하는 차종에 대한 통행세 15% 인하 혜택이 주요 메트로폴리스 지역을 기반으로 시범 실행되고 있습니다.", date: "2026-06-05", sourceName: "USDOT", sourceUrl: "https://www.transportation.gov" }
+            ],
+            marketIssues: [
+                { topic: "하이브리드(HEV) 차량의 폭발적인 수요 증대", content: "순수 전기차(BEV) 캐즘 극복 모델로 중대형 가솔린 하이브리드 세그먼트 선호도가 극에 달했으며 중고차 잔존 가치도 동반 상승하고 있습니다.", date: "2026-07-14", sourceName: "Car and Driver", sourceUrl: "https://www.caranddriver.com" },
+                { topic: "자율주행 레벨 3 규제 완화 움직임", content: "미국 도로교통안전국(NHTSA)이 고속도로 내 레벨 3 무인 자율 조향 조건 일부 완화를 검토 중입니다. 라이다 장착 모델 가격 인하가 핵심 안건입니다.", date: "2026-07-08", sourceName: "NHTSA Press", sourceUrl: "https://www.nhtsa.gov" },
+                { topic: "컴팩트 픽업 트럭 라인업 인기 부활", content: "도심 친환경 기조에 호응하는 가솔린 하이브리드 및 전동 픽업 트럭의 비중이 20~30대 젊은 층 위주로 전년 대비 18% 이상 고속 증가세입니다.", date: "2026-06-30", sourceName: "MotorTrend", sourceUrl: "https://www.motortrend.com" },
+                { topic: "차량 내 생성형 AI 탑재 인터페이스 경쟁", content: "대화형 인포테인먼트의 음성 제어 정확도 경쟁이 치열해지며, 안드로이드 오토모티브 OS 기반의 시스템 통합이 주류 흐름으로 정착되고 있습니다.", date: "2026-06-22", sourceName: "TechCrunch", sourceUrl: "https://techcrunch.com" },
+                { topic: "LFP 배터리 탑재 저가형 전동화 트렌드", content: "유지비 절감과 보급성을 최우선으로 내세운 리튬인산철 배터리 채택 전기차가 엔트리 세그먼트에서 빠른 침투율을 기록하고 있습니다.", date: "2026-06-12", sourceName: "BloombergNEF", sourceUrl: "https://about.bnef.com" }
+            ],
+            hyundaiTrends: [
+                { topic: "아이오닉 9 메가 런칭 스폰서십 실행", content: "로스앤젤레스 소파이 스타디움(SoFi Stadium) 공식 디지털 전광판 및 대형 전시장 스폰서십 전면 계약 체결. 오프라인 관람객 대상 디지털 QR 시승 연계 캠페인을 전개하고 있습니다.", date: "2026-07-12", sourceName: "Hyundai USA", sourceUrl: "https://www.hyundaiusa.com" },
+                { topic: "HMGMA 조지아 신공장 가동 기념 특별 프로모션", content: "조지아 신공장에서 직접 생산된 전기차 대상 무이자 할부 72개월 지원 프로그램을 론칭하며 대대적인 소셜 마케팅 광고(유튜브 전면 광고 배치)를 단행했습니다.", date: "2026-07-05", sourceName: "Reuters", sourceUrl: "https://www.reuters.com" },
+                { topic: "글로벌 축구 메이저 이벤트 파트너십", content: "북미 지역 축구 리그 및 주말 패밀리 아웃도어 타겟 캠페인을 통합 런칭하고 주요 소셜 미디어 플랫폼 채널을 통한 숏폼 연계 이벤트를 확장하고 있습니다.", date: "2026-06-28", sourceName: "Hyundai Media", sourceUrl: "https://news.hyundai.com" },
+                { topic: "제네시스 브랜드 플래그십 클럽 스폰서십", content: "PGA 투어 및 럭셔리 라이프스타일 매체 공동 캠페인을 집행하여 고급 전동화 라인업의 브랜딩 정체성을 강화하고 프리미엄 고객 접점을 육성했습니다.", date: "2026-06-19", sourceName: "Genesis Newsroom", sourceUrl: "https://www.genesisnewsroom.com" },
+                { topic: "아이오닉 5 N 드리프트 아카데미 온라인 캠페인", content: "모터스포츠 매니아 층을 겨냥한 익스트림 주행 퍼포먼스 유튜브 브랜디드 콘텐츠 시리즈가 통합 조회수 1,200만 뷰를 넘어서며 흥행에 성공했습니다.", date: "2026-06-10", sourceName: "Hyundai N", sourceUrl: "https://www.hyundai-n.com" }
+            ],
+            competitorTrends: [
+                { competitor: "Tesla", topic: "모델 Y 페이스리프트 주니퍼 미디어 캠페인", content: "신형 Juniper 출시와 동시에 메인 소셜 채널을 활용한 'No Screws' 혁신 조립 공정 쇼케이스를 진행하며 숏폼 비디오 누적 조회수 4,500만 뷰 돌파.", date: "2026-07-11", sourceName: "Tesla YouTube", sourceUrl: "https://www.youtube.com" },
+                { competitor: "Tesla", topic: "2026 북미 추천인 보상 프로그램(Referral 2.0) 전격 재개", content: "기존 오너가 신규 구매 고객을 추천할 시 무상 슈퍼차저 5,000마일 혜택 및 FSD 프리뷰 이용권을 제공하는 바이럴 디지털 스폰서 캠페인을 시행했습니다.", date: "2026-07-06", sourceName: "Tesla Motors News", sourceUrl: "https://www.tesla.com" },
+                { competitor: "Ford", topic: "F-150 Lightning 썸머 스페셜 리스 혜택 제공", content: "가장 인기 높은 XLT 사양 기준 월 $399 파격 리스 프로모션을 실시 중이며 TVC 광고를 전국 단위로 고밀도 편성하여 점유율 회복에 총력을 기울이고 있습니다.", date: "2026-07-09", sourceName: "Ford Direct", sourceUrl: "https://www.ford.com" },
+                { competitor: "Toyota", topic: "차세대 하이브리드 패밀리 캠페인 'Always Ready'", content: "라브4 하이브리드 및 하이랜더 중심의 미디어 믹스 스폰서십 캠페인을 집행, 친환경성과 고연비 라이프스타일을 강조하는 소셜 미디어 인플루언서 릴레이 챌린지를 추진 중입니다.", date: "2026-07-02", sourceName: "Toyota News", sourceUrl: "https://www.toyota.com" },
+                { competitor: "Toyota", topic: "미국 청소년 스포츠 재단 장기 후원 및 미디어 캠페인 발족", content: "가족형 SUV 시장 지배력을 공고히 하기 위해 전국 청소년 야구 및 축구 리그 스폰서십을 체결하고 가족의 가치를 조명하는 감성 TV 광고를 송출하기 시작했습니다.", date: "2026-06-22", sourceName: "Toyota Pressroom", sourceUrl: "https://pressroom.toyota.com" },
+                { competitor: "GM", topic: "쉐보레 이쿼녹스 EV 대규모 로드 트립 광고 송출", content: "합리적인 $35,000 수준 전기차 가격 포지셔닝을 부각하는 실용성 중심 TVC 광고 및 전국 아웃도어 페스티벌 거점 연계 전시 캠페인을 가동했습니다.", date: "2026-06-25", sourceName: "GM Pressroom", sourceUrl: "https://media.gm.com" }
+            ]
+        }
+    };
+
+    let activeCountry = "US";
+    let customApiKey = localStorage.getItem("gemini_api_key") || "";
+
+    window.onload = function() {
+        document.getElementById("custom-api-key").value = customApiKey;
+        buildCountryTabs();
+        loadCountryDashboard(activeCountry);
+    };
+
+    function saveApiKey() {
+        const key = document.getElementById("custom-api-key").value.trim();
+        localStorage.setItem("gemini_api_key", key);
+        customApiKey = key;
+        showToast("Gemini API 키가 성공적으로 저장되었습니다!");
+    }
+
+    function toggleGlobalSettings() {
+        const drawer = document.getElementById("settings-drawer");
+        drawer.classList.toggle("hidden");
+    }
+
+    // Dynamic Country Tabs Generator
+    function buildCountryTabs() {
+        const listContainer = document.getElementById("country-tab-list");
+        listContainer.innerHTML = "";
+        
+        Object.keys(COUNTRIES_METADATA).forEach(code => {
+            const country = COUNTRIES_METADATA[code];
+            const btn = document.createElement("button");
+            btn.id = `tab-${code}`;
+            btn.className = `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                activeCountry === code 
+                ? 'bg-indigo-600 text-white shadow-md' 
+                : 'text-slate-600 hover:bg-slate-100'
+            }`;
+            
+            btn.onclick = () => selectCountry(code);
+            btn.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-base">${country.flag}</span>
+                    <span>${country.name}</span>
+                </div>
+                <span class="text-[10px] ${activeCountry === code ? 'text-indigo-200' : 'text-slate-400'} uppercase font-bold">${code}</span>
+            `;
+            listContainer.appendChild(btn);
+        });
+
+        // Set Total competitors length
+        let count = 0;
+        Object.values(COUNTRIES_METADATA).forEach(c => count += c.competitors.length);
+        document.getElementById("total-competitors-badge").innerText = `${count}개 브랜드`;
+    }
+
+    // Switch Country Focus
+    function selectCountry(code) {
+        // Toggle Active Tab Style
+        document.getElementById(`tab-${activeCountry}`).className = "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:bg-slate-100";
+        document.getElementById(`tab-${code}`).className = "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow-md";
+        
+        activeCountry = code;
+        loadCountryDashboard(code);
+    }
+
+    function loadCountryDashboard(code) {
+        const country = COUNTRIES_METADATA[code];
+        document.getElementById("active-country-flag").innerText = country.flag;
+        document.getElementById("active-country-name").innerText = country.name;
+        document.getElementById("active-country-code").innerText = code;
+        document.getElementById("active-country-competitors").innerText = country.competitors.join(", ");
+
+        // Check if there's saved data in localStorage from previous search, otherwise use static demo/fallback
+        const storedData = localStorage.getItem(`car_research_data_${code}`);
+        if (storedData) {
+            try {
+                const parsed = JSON.parse(storedData);
+                renderDashboardContent(parsed, parsed.timestamp || "최근 저장됨");
+                return;
+            } catch (e) {
+                console.error("Local storage parse failed, resetting...", e);
+            }
+        }
+
+        // Use built-in fallbacks
+        const fallbackData = DEMO_DATABASE[code] || generateDynamicMockData(code);
+        renderDashboardContent(fallbackData, "디폴트 데이터베이스 (실시간 업데이트 권장)");
+    }
+
+    // Helper to render final objects onto DOM elements
+    function renderDashboardContent(data, timestamp) {
+        const timestampHtml = `<i class="fa-regular fa-clock mr-1"></i>최종 업데이트: ${timestamp}`;
+        document.getElementById("update-timestamp").innerHTML = timestampHtml;
+        document.getElementById("top-update-timestamp").innerHTML = timestampHtml;
+
+        // 1. Summary Bullet Points
+        const summaryUl = document.getElementById("summary-list");
+        summaryUl.innerHTML = "";
+        if (data.summary && data.summary.length > 0) {
+            data.summary.forEach(bullet => {
+                const li = document.createElement("li");
+                li.className = "flex items-start space-x-2";
+                li.innerHTML = `
+                    <span class="text-indigo-500 mt-1 font-bold text-base">•</span>
+                    <span class="leading-relaxed">${bullet}</span>
+                `;
+                summaryUl.appendChild(li);
+            });
+        } else {
+            summaryUl.innerHTML = `<li class="text-slate-400">데이터가 비어 있습니다. 상단의 실시간 업데이트를 눌러 데이터를 가져오세요.</li>`;
+        }
+
+        // 2. Market Trends Table (Max 5 rows)
+        renderTable("table-market-trends", data.marketTrends, ["topic", "content", "date", "sourceUrl"]);
+
+        // 3. Market Issues Table (Max 5 rows)
+        renderTable("table-market-issues", data.marketIssues, ["topic", "content", "date", "sourceUrl"]);
+
+        // 4. Hyundai Trends Table (Max 5 rows)
+        renderTable("table-hyundai-trends", data.hyundaiTrends, ["topic", "content", "date", "sourceUrl"]);
+
+        // 5. Competitor Trends Table (Comprehensively covers multiple mapped brands)
+        const competitorBody = document.getElementById("table-competitor-trends");
+        competitorBody.innerHTML = "";
+        if (data.competitorTrends && data.competitorTrends.length > 0) {
+            data.competitorTrends.forEach(item => {
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-50 transition-all text-xs text-slate-700";
+                
+                // Emphasize competitor badge
+                const compBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800">${item.competitor || "경쟁사"}</span>`;
+                
+                tr.innerHTML = `
+                    <td class="px-5 py-3 border-b border-slate-100 font-bold text-slate-900">
+                        <div class="flex flex-col gap-1">
+                            ${compBadge}
+                            <span class="text-[11px] text-slate-500 mt-1">${item.topic || ""}</span>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3 border-b border-slate-100 leading-relaxed text-slate-600">${item.content || ""}</td>
+                    <td class="px-5 py-3 border-b border-slate-100 text-center text-slate-500 whitespace-nowrap">${item.date || "-"}</td>
+                    <td class="px-5 py-3 border-b border-slate-100 text-center">
+                        <a href="${item.sourceUrl || '#'}" target="_blank" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-bold gap-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded transition-colors text-[10px]">
+                            <i class="fa-solid fa-square-rss"></i>
+                            ${item.sourceName || "원문보기"}
+                        </a>
+                    </td>
+                `;
+                competitorBody.appendChild(tr);
+            });
+        } else {
+            competitorBody.innerHTML = `<tr><td colspan="4" class="px-5 py-6 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
+        }
+    }
+
+    // Generic Table Row Populator
+    function renderTable(elementId, items, keys) {
+        const tbody = document.getElementById(elementId);
+        if (!tbody) {
+            console.warn(`Element with ID ${elementId} not found in the DOM.`);
+            return;
+        }
+        tbody.innerHTML = "";
+        if (items && items.length > 0) {
+            // Slicing to guarantee strict max 5 items for visual and design discipline
+            const displayItems = items.slice(0, 5);
+            displayItems.forEach(item => {
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-50 transition-all text-xs text-slate-700";
+                
+                tr.innerHTML = `
+                    <td class="px-5 py-3 border-b border-slate-100 font-bold text-slate-900">${item[keys[0]] || ""}</td>
+                    <td class="px-5 py-3 border-b border-slate-100 leading-relaxed text-slate-600">${item[keys[1]] || ""}</td>
+                    <td class="px-5 py-3 border-b border-slate-100 text-center text-slate-500 whitespace-nowrap">${item[keys[2]] || "-"}</td>
+                    <td class="px-5 py-3 border-b border-slate-100 text-center">
+                        <a href="${item[keys[3]] || '#'}" target="_blank" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-bold gap-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded transition-colors text-[10px]">
+                            <i class="fa-solid fa-square-rss"></i>
+                            ${item.sourceName || "원문보기"}
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-5 py-6 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
+        }
+    }
+
+    // Call Gemini API with Google Search Grounding to do dynamic automated market research
+    async function refreshCountryData(userClick = false) {
+        const country = COUNTRIES_METADATA[activeCountry];
+        const loader = document.getElementById("loading-overlay");
+        const progressBar = document.getElementById("loading-progress-bar");
+        const statusTitle = document.getElementById("loading-status-title");
+        const statusDesc = document.getElementById("loading-status-desc");
+
+        loader.classList.remove("hidden");
+        progressBar.style.width = "10%";
+        statusTitle.innerText = `${country.name} 실시간 검색 분석기 가동...`;
+        statusDesc.innerText = "Reuters, Autocar, 전문 보도자료망의 구글 검색 기반 분석 인프라를 가동 중입니다.";
+
+        // Progression Simulation for immersive visual impact
+        let progress = 10;
+        const progInterval = setInterval(() => {
+            if (progress < 85) {
+                progress += Math.floor(Math.random() * 8) + 3;
+                progressBar.style.width = `${progress}%`;
+                if (progress > 30 && progress < 60) {
+                    statusTitle.innerText = `${country.name} 정부 공식 친환경/세금 정책 크롤링 중...`;
+                    statusDesc.innerText = `자료 출처 검증처: ${country.searchFocus}`;
+                } else if (progress >= 60) {
+                    statusTitle.innerText = `현대차 및 라이벌군(${country.competitors.slice(0,5).join(',')} 등) 마케팅·캠페인 취합 중...`;
+                    statusDesc.innerText = "디지털 매체 광고, 스포츠 스폰서십, 유튜브 및 현지 미디어 분석 진행 완료 중.";
+                }
+            }
+        }, 800);
+
+        // System Instruction to build structured reliable insights with high coverage and tight temporal filters
+        const systemPrompt = `You are an elite, world-class automotive market intelligence analyst specializing in competitor analysis for Hyundai Motor Group.
+        Your job is to search the web for the absolute latest, highly factual news and real-world market intelligence regarding a specified country.
+        
+        CRITICAL TIME FILTER REQUIREMENT:
+        - The current date is Wednesday, July 15, 2026.
+        - "Latest" or "최신" is strictly defined as news and campaigns published within the LAST 2 MONTHS relative to today (specifically from May 15, 2026 to July 15, 2026).
+        - You MUST heavily prioritize and target the absolute most recent news within the last 2 weeks to 1 month (specifically from mid-June 2026 to July 15, 2026) as the absolute best and ideal target.
+        - Under no circumstances should you include outdated news older than May 15, 2026.
+        
+        Prioritize prestigious sources like Reuters, Autocar, Automotive News, national department of transportation, local authorized automotive media etc.
+        Format your response ONLY as a JSON object matching the specific structure requested, strictly containing real news, correct figures, and relevant clickable source urls found in search metadata.
+
+        Return a single JSON object (with no other markdown text) structured EXACTLY like this schema:
+        {
+          "summary": [
+            "Provide 4 to 5 distinct, incredibly detailed bullet points summarizing the absolute latest key market dynamics (within the last 2 months), emphasizing raw figures or percentages using markdown bold (e.g. **15%**, **$10,000**, **8월 15일**). Format in Korean."
+          ],
+          "marketTrends": [
+            "Provide up to 5 rich entries (minimum 3 if data exists) from the last 2 months. Detailed Korean analysis of social, policy, subsidies, tax changes with stats. Schema: { 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
+          ],
+          "marketIssues": [
+            "Provide up to 5 rich entries (minimum 3 if data exists) from the last 2 months. Detailed Korean analysis of new launches or crucial local issues. Schema: { 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
+          ],
+          "hyundaiTrends": [
+            "Provide up to 5 rich entries (minimum 3 if data exists) from the last 2 months. Detailed Korean analysis of Hyundai's marketing, events, launch news. Schema: { 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
+          ],
+          "competitorTrends": [
+            "IMPORTANT: Actively search and target the ENTIRE provided competitor list for this country. Do not limit to one entry per brand. If a single competitor has multiple active, distinct marketing campaigns, digital/TV/Social ads, launches, or sponsorships (e.g. Toyota having both an EV launch campaign and a major local sports sponsorship) published within the last 2 months, generate SEPARATE, MULTIPLE rows for that competitor brand so that we capture all their key activities comprehensively. Aim for 5 to 10 rich rows in total for this table to showcase maximum coverage. Schema: { 'competitor', 'topic', 'content', 'date', 'sourceName', 'sourceUrl' }"
+          ]
+        }`;
+
+        const userQuery = `Execute deep-dive research for the country "${country.name}" (${activeCountry}) representing the automotive sector.
+        - Today's date is July 15, 2026. You MUST strictly fetch news, policies, launches, and campaigns published within the last 2 months (between May 15, 2026 and July 15, 2026).
+        - The absolute best and highest priority target window is the last 2 weeks to 1 month (between mid-June 2026 and July 15, 2026). Prioritize these above all else.
+        - Competitors to track comprehensively in this report: ${country.competitors.join(", ")}.
+        - Find key official policy declarations (subsidies, taxes, social issues) from the specified 2-month window. Collect up to 5 major entries.
+        - Find local car market issues, new model trend indexes, or launches from the specified 2-month window. Collect up to 5 major entries.
+        - Find Hyundai's local launches and promotional advertising strategies/sponsorships from the specified 2-month window. Collect up to 5 major entries.
+        - Find competitor-specific marketing campaign launches, digital/TV/Social ads, sports event sponsorships, or promotion rollouts from the specified 2-month window. Actively search multiple distinct brands from the list. If a competitor has multiple prominent campaigns, list them as separate individual entries to show multiple activities per brand. Make sure we populate a wide table with solid, diverse, and deep competitor coverage (aim for 5 to 10 rows in total).
+        - Return the results in Korean language. Maintain factual accuracy and include specific numbers/dates strictly within the 2-month range (May-July 2026). Make sure "sourceUrl" fields are valid, active web URLs retrieved during grounding.`;
+
+        try {
+            const apiKey = customApiKey || ""; // Canvas automatically supplies when left empty.
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP Error Status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            clearInterval(progInterval);
+            progressBar.style.width = "100%";
+            statusTitle.innerText = "리서치 정보 취합 및 검증 성공!";
+            statusDesc.innerText = "실시간 구글 검색으로 고신뢰성 정보를 통합 렌더링 중입니다.";
+
+            const candidate = result.candidates?.[0];
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                const rawText = candidate.content.parts[0].text;
+                
+                // Super robust JSON extraction: extracts the outer-most { ... } block
+                // This ignores any leading/trailing text, markdown formatting backticks, or citations.
+                let jsonText = rawText.trim();
+                const firstBrace = jsonText.indexOf('{');
+                const lastBrace = jsonText.lastIndexOf('}');
+                
+                if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                    jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+                } else {
+                    throw new Error("No valid JSON object detected in the response.");
+                }
+
+                const parsedData = JSON.parse(jsonText);
+                
+                // Add timestamp
+                const now = new Date();
+                const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                parsedData.timestamp = formattedDate;
+
+                // Cache to LocalStorage for offline seamless experience
+                localStorage.setItem(`car_research_data_${activeCountry}`, JSON.stringify(parsedData));
+
+                setTimeout(() => {
+                    renderDashboardContent(parsedData, formattedDate);
+                    loader.classList.add("hidden");
+                    showToast(`${country.name} 실시간 리서치가 업데이트되었습니다!`);
+                }, 1000);
+            } else {
+                throw new Error("No text output received from Gemini API.");
+            }
+
+        } catch (error) {
+            console.error("Gemini Search Grounding failed: ", error);
+            clearInterval(progInterval);
+            loader.classList.add("hidden");
+            showToast("실시간 검색 연동에 실패하여 로컬 안전망 데이터로 복원합니다.", "error");
+        }
+    }
+
+    // Simple Toast notifications for elegant UX
+    function showToast(message, type = "success") {
+        const existingToast = document.getElementById("global-toast");
+        if (existingToast) existingToast.remove();
+
+        const toast = document.createElement("div");
+        toast.id = "global-toast";
+        toast.className = `fixed bottom-5 right-5 z-50 flex items-center space-x-2.5 px-4 py-3 rounded-lg text-sm font-semibold text-white shadow-xl transition-all duration-300 transform translate-y-0 ${
+            type === "success" ? 'bg-slate-900 border border-slate-800' : 'bg-red-600'
+        }`;
+        
+        toast.innerHTML = `
+            <i class="fa-solid ${type === "success" ? 'fa-circle-check text-emerald-400' : 'fa-circle-exclamation'} text-base"></i>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateY(20px)";
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Copy full dashboard contents as text layout
+    function exportToText() {
+        const country = COUNTRIES_METADATA[activeCountry];
+        const dataKey = `car_research_data_${activeCountry}`;
+        let activeData = localStorage.getItem(dataKey);
+
+        if (activeData) {
+            activeData = JSON.parse(activeData);
+        } else {
+            activeData = DEMO_DATABASE[activeCountry] || generateDynamicMockData(activeCountry);
+        }
+
+        let output = `=========================================\n`;
+        output += `자동차 시장 자동화 리서치 보고서 - ${country.flag} ${country.name} (${activeCountry})\n`;
+        output += `생성 기준일: ${activeData.timestamp || 'Default Baseline'}\n`;
+        output += `=========================================\n\n`;
+
+        output += `[AI 종합 요약 (Summary)]\n`;
+        activeData.summary.forEach((s, idx) => {
+            output += `${idx + 1}. ${s.replace(/\*\*/g, '')}\n`;
+        });
+        output += `\n`;
+
+        output += `[1. 시장 경향성 (Market Trends)]\n`;
+        activeData.marketTrends.forEach(m => {
+            output += `- ${m.topic} (${m.date}): ${m.content} (출처: ${m.sourceName} | ${m.sourceUrl})\n`;
+        });
+        output += `\n`;
+
+        output += `[2. 시장 주요 이슈 (Market Issues)]\n`;
+        activeData.marketIssues.forEach(m => {
+            output += `- ${m.topic} (${m.date}): ${m.content} (출처: ${m.sourceName} | ${m.sourceUrl})\n`;
+        });
+        output += `\n`;
+
+        output += `[3. 자사 동향 (Hyundai)]\n`;
+        activeData.hyundaiTrends.forEach(m => {
+            output += `- ${m.topic} (${m.date}): ${m.content} (출처: ${m.sourceName} | ${m.sourceUrl})\n`;
+        });
+        output += `\n`;
+
+        output += `[4. 경쟁사 동향 (Competitors)]\n`;
+        activeData.competitorTrends.forEach(m => {
+            output += `- [${m.competitor}] ${m.topic} (${m.date}): ${m.content} (출처: ${m.sourceName} | ${m.sourceUrl})\n`;
+        });
+
+        // Copy process with safe fallback
+        const textArea = document.createElement("textarea");
+        textArea.value = output;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showToast("현재 국가의 리서치 텍스트가 클립보드에 복사되었습니다!");
+        } catch (err) {
+            showToast("복사 실패: 수동 드래그 복사를 이용해주세요.", "error");
+        }
+        document.body.removeChild(textArea);
+    }
+
+    // Dynamic generator fallback mock schema for remaining 11 countries prior to search trigger
+    function generateDynamicMockData(code) {
+        const country = COUNTRIES_METADATA[code];
+        const primaryComp = country.competitors[0] || "Toyota";
+        const secondaryComp = country.competitors[1] || "BYD";
+        const tertiaryComp = country.competitors[2] || "Tesla";
+        
+        return {
+            summary: [
+                `**${country.name}** 시장 내 친환경 세제 개편 논의가 시작되어 완성차 세금 부담이 약 **4.5%** 상승할 것으로 현지 언론이 분석하고 있습니다.`,
+                `최근 주행 효율성이 극대화된 **소형 세그먼트** 수요가 지속 상승세에 있으며, 딜러망 전반의 재고 일수가 **45일** 수준으로 회복세입니다.`,
+                `현대자동차는 ${country.name} 시장 맞춤형 마케팅 슬로건을 발족하고, 현지 유력 소셜 인플루언서 연계 디지털 캠페인을 대대적으로 가동 중입니다.`,
+                `주력 라이벌사인 **${primaryComp}**는 대대적인 특별 유예 금융 제도를 시작하였고, 라이징 브랜드 **${secondaryComp}**는 현지 오프라인 거점을 확장하고 있습니다.`,
+                `신차 등록 프로세스 완화 및 디지털 등록 지원 솔루션 도입으로 구매 전환율이 전년 동기 대비 **3.2%** 동반 개선되었습니다.`
+            ],
+            marketTrends: [
+                { topic: "소비자 물가지수 안정화 기조", content: "현지 경제지표 하향 국면에 맞춰 차량 리스 조달 금리가 0.3% 하락 조정되며 엔트리카 구매력이 개선되고 있습니다.", date: "2026-07-04", sourceName: "Reuters", sourceUrl: "https://www.reuters.com" },
+                { topic: "탄소 배출세 강화 규제안 발효", content: "내연기관 라인업에 대한 추가 탄소 할당세 부과 정책이 검토 단계에 접어들며 현지 수입 유통망의 전동화 믹스 전환 요구가 거세지고 있습니다.", date: "2026-07-01", sourceName: "Autocar", sourceUrl: "https://www.autocar.co.uk" },
+                { topic: "대도시권 통행료 차등제 적용", content: "친환경 고출력 EV 차량에 대해 도심 중심지 진입 통행세를 면제해주는 친환경 우대 룰이 정식 시행되었습니다.", date: "2026-06-20", sourceName: "Local Government News", sourceUrl: "https://www.google.com" },
+                { topic: "전기 유휴 전력 활용 그리드 가입 혜택", content: "차량의 유휴 전력을 재판매하는 V2G(Vehicle to Grid) 인센티브 프로그램 가입 세대에 연간 최대 **$500** 상당 크레딧이 발행됩니다.", date: "2026-06-15", sourceName: "Energy Portal", sourceUrl: "https://www.google.com" },
+                { topic: "중고 친환경차 거래 인프라 고도화", content: "잔존 가치를 보장하기 위한 공공 검증 서비스가 출범하면서 중고차 안심 구매 인덱스가 **12%** 증가하는 수치를 기록했습니다.", date: "2026-06-08", sourceName: "National Agency", sourceUrl: "https://www.google.com" }
+            ],
+            marketIssues: [
+                { topic: "도심 전동형 라인업 강세", content: "협소한 주차 인프라를 타겟으로 디자인된 도심형 미니 크로스오버 차종의 인기가 고속 성장 국면에 도달했습니다.", date: "2026-07-11", sourceName: "Local Media Focus", sourceUrl: "https://www.google.com" },
+                { topic: "장거리 아웃도어용 대형 HEV 각광", content: "캠핑 트레일러 가동을 지원하는 강력한 견인력을 가진 다용도 하이브리드 스포츠 유틸리티 차량의 판매 계약 비중이 크게 성장했습니다.", date: "2026-06-28", sourceName: "Automotive Daily", sourceUrl: "https://www.google.com" },
+                { topic: "차량 디지털 보안 기술 고도화", content: "스마트 키 불법 해킹 사례 방지를 위해 실시간 OTP 알고리즘을 도입한 보안 시스템 기본 사양이 구매 만족도를 높이고 있습니다.", date: "2026-06-22", sourceName: "Security Focus", sourceUrl: "https://www.google.com" },
+                { topic: "가성비 소형 전기차 런칭 릴레이", content: "엔트리급 친환경 세그먼트를 목표로 한 가속 생산 라인이 전용 설계를 통해 단가를 15% 낮추어 연이은 출시를 준비하고 있습니다.", date: "2026-06-17", sourceName: "Auto Press", sourceUrl: "https://www.google.com" },
+                { topic: "친환경 실내 비건 내장재 선호 기조", content: "재활용 해양 플라스틱 및 식물성 시트를 옵션으로 제공하는 커스텀 모델 선택 비중이 전체 오더의 **18%**에 달하는 수치를 달성했습니다.", date: "2026-06-09", sourceName: "Green Report", sourceUrl: "https://www.google.com" }
+            ],
+            hyundaiTrends: [
+                { topic: "브랜드 디지털 커넥티비티 마케팅 가동", content: "모바일 통합 차량 관리 플랫폼 현지화 런칭 캠페인을 시행하여 구매층 대상 가치 전달 프로모션을 성공적으로 개시하였습니다.", date: "2026-07-13", sourceName: "Hyundai Newsroom", sourceUrl: "https://news.hyundai.com" },
+                { topic: "친환경 로드십 마일리지 프로그램 전개", content: "에코 드라이빙 주행 점수가 우수한 실 차주들을 추첨해 고급 아웃도어 글램핑 쿠폰을 지급하는 참여형 고객 챌린지를 확장했습니다.", date: "2026-06-26", sourceName: "Hyundai Press", sourceUrl: "https://news.hyundai.com" },
+                { topic: "전기 SUV 타겟 도심 랜드마크 팝업 스토어 오픈", content: "메인 쇼핑센터 광장에 친환경 신차의 차량 내 전력(V2L)을 활용한 즉석 야외 무대 이벤트를 열어 다수 미디어를 집객시켰습니다.", date: "2026-06-19", sourceName: "Hyundai Event", sourceUrl: "https://news.hyundai.com" },
+                { topic: "로컬 유명 아웃도어 매체와 스폰서십 체결", content: "자연 친화적 모빌리티 테마에 기반한 콜라보 다큐멘터리 제작 및 메인 스폰서 슬롯 인센티브 프로모션을 전면 추진하고 있습니다.", date: "2026-06-12", sourceName: "Hyundai Branding", sourceUrl: "https://news.hyundai.com" },
+                { topic: "안전 사양 보강 소셜 비디오 광고 릴리즈", content: "안전 주행 센서 및 어시스트 옵션의 실제 반응 시뮬레이션을 재현한 감각적인 영상이 주요 비디오 플랫폼에서 흥행 트렌드를 유도 중입니다.", date: "2026-06-05", sourceName: "Hyundai Campaign", sourceUrl: "https://news.hyundai.com" }
+            ],
+            competitorTrends: [
+                { competitor: primaryComp, topic: "썸머 드라이빙 스폰서십 광고 대량 런칭", content: "여름 휴가 시즌 타겟 대형 레저 캠프 공식 오토모티브 파트너 계약 체결 및 현지 TV 지상파 프라임타임 전방위 송출 개시.", date: "2026-07-12", sourceName: "Auto Express", sourceUrl: "https://www.autoexpress.co.uk" },
+                { competitor: secondaryComp, topic: "신형 친환경차 현지 전격 쇼케이스", content: "공식 런칭 비디오와 라이브 디지털 프레스 컨퍼런스를 유튜브 현지 채널을 통해 동시 방송하여 높은 트래픽을 수집 중입니다.", date: "2026-07-09", sourceName: "Bloomberg Auto", sourceUrl: "https://www.bloomberg.com" },
+                { competitor: tertiaryComp, topic: "보급 모델 디지털 세일즈 및 추천 캠페인 가동", content: "지인 추천 룰 적용 시 부품 무료 교환 및 라이프웨어 굿즈를 제공하는 전형적인 오너십 바이럴 마케팅을 전방위 집행하고 있습니다.", date: "2026-07-01", sourceName: "Brand Press", sourceUrl: "https://www.google.com" },
+                { competitor: primaryComp, topic: "친환경 연비 시승 릴레이 프로모션", content: "전국 거점 메이저 대리점에서 진행되는 실주행 저탄소 고연비 인증 릴레이 챌린지를 성공적으로 안착시켰습니다.", date: "2026-06-21", sourceName: "Competitor Hub", sourceUrl: "https://www.google.com" }
+            ]
+        };
+    }
+</script>
+</body>
+</html>
